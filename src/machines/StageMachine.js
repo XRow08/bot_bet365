@@ -132,9 +132,7 @@ class StageMachine {
    * @returns {Promise<Stage>}
    */
   async init(instance) {
-    await instance.myBrowser.pupPage.goto(
-      "https://casino.bet365.com/Play/LiveRoulette"
-    );
+    await (await instance.myBrowser).pupPage.goto("https://casino.bet365.com/Play/LiveRoulette");
 
     return Stage.nextStage(instance.actualStage);
   }
@@ -168,6 +166,7 @@ class StageMachine {
       });
     }
 
+    await sleep(1500);
     return Stage.nextStage(instance.actualStage);
     // return instance.actualStage
   }
@@ -197,6 +196,8 @@ class StageMachine {
         }
       }
     });
+
+    await sleep(500);
     return Stage.nextStage(instance.actualStage);
     // return instance.actualStage
   }
@@ -217,6 +218,7 @@ class StageMachine {
         console.log(frames.length);
       }
     });
+    await sleep(500);
     return Stage.nextStage(instance.actualStage);
   }
 
@@ -227,9 +229,19 @@ class StageMachine {
    * @returns {Promise<Stage>}
    */
   async openHallPopup(instance) {
+    await sleep(1500);
     await instance.myBrowser.pupPage.goto(
-      "https://dl-com.c365play.com/casinoclient.html?game=rol&preferedmode=real&language=pt&cashierdomain=www.sgla365.com&ngm=1&wmode=opaque"
+      "https://livecasino.bet365.com/Play/RoletaBrasileirabet365"
+      // "https://dl-com.c365play.com/live_desktop/bundles/22.10.2.24/?gametype=rol&preferedmode=real&language=pt&cashierdomain=www.sgla365.com&ngm=1&wmode=opaque"
+      // "https://livecasino.bet365.com/Play/LiveRoulette"
+      // "https://dl-com.c365play.com/casinoclient.html?game=rol&preferedmode=real&language=pt&cashierdomain=www.sgla365.com&ngm=1&wmode=opaque"      
     );
+
+    await sleep(2500);
+    instance.myBrowser.page2 = await instance.myBrowser.pupBrowser.newPage();
+    instance.myBrowser.page2.goto("https://dl-com.c365play.com/live_desktop/bundles/22.10.2.24/?gametype=rol&preferedmode=real&language=pt&cashierdomain=www.sgla365.com&ngm=1&wmode=opaque");
+    await sleep(1500);
+    await instance.myBrowser.pupPage.close();
     return Stage.nextStage(instance.actualStage);
   }
 
@@ -240,7 +252,7 @@ class StageMachine {
    */
   async getData(instance) {
     if (
-      (await instance.myBrowser.pupPage.evaluate(() => {
+      (await instance.myBrowser.page2.evaluate(() => {
         return document.querySelector(
           ".modal-container.modal-confirm_desktop.modal-confirm_desktop_with-icon"
         );
@@ -248,8 +260,11 @@ class StageMachine {
     ) {
       return Stage.nextStage(instance.actualStage);
     }
+
     console.log("exec");
-    let result = await instance.myBrowser.pupPage.evaluate(() => {
+    await instance.myBrowser.page2.waitForSelector('.lobby-category-item.lobby-category-item_lobby-external-mode');
+    let result = await instance.myBrowser.page2.evaluate(() => {
+      document.querySelectorAll(".lobby-category-item.lobby-category-item_lobby-external-mode")[1].click();
       // noinspection JSUnresolvedVariable
       (roulettes = Array.from(
         document.getElementsByClassName("lobby-table__container")
@@ -717,11 +732,10 @@ class StageMachine {
 
       return new StageMachine(browser, stage);
     } catch (e) {
-      return new StageMachine(
-        MyBrowser.launchBrowser({
-          headless: false,
-        })
-      );
+      return new StageMachine(await MyBrowser.launchBrowser({ 
+        headless: false,
+        args: ['--no-sandbox', '--user-data-dir=/tmp/chromium', '--disable-web-security', '--disable-features=site-per-process'] 
+      }));
     }
   }
 }
